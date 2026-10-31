@@ -36,6 +36,7 @@ from ..enums import (
     WatermarkKind,
 )
 from ..net.bsk import resolve_bsk_path
+from ..organize.template import PATH_FIELD_MAX_BYTES
 from ..parsing import ContentType
 from ..plugins.models import PluginConfig
 from ..sr import SrPreset
@@ -599,6 +600,17 @@ class WorkerConfig(BaseModel):
     shutdown_timeout: float = Field(default=0, ge=0, le=120.0, json_schema_extra={"x-hidden": True})
 
 
+class OrganizeConfig(BaseModel):
+    field_max_bytes: int = Field(default=PATH_FIELD_MAX_BYTES, ge=16, le=255)
+    """路径模板里 `{title}` / `{actor}` / `{actors}` / `{actress}` / `{actresses}` 的截断上限
+    (UTF-8 字节, 末尾省略号计入).
+
+    同一路径段里的模板字面量 (如 `[[{year}]]` / `[[{number}]]`) **不占**这份预算, 所以整段仍可能超出
+    文件系统或共享的名字上限. 该上限触发时 Windows 报的是 ERROR_INVALID_NAME (WinError 123,
+    「文件名、目录名或卷标语法不正确」), 与「名字里有非法字符」同码; 按实测上限调小此值即可留出余量.
+    """
+
+
 class WatcherConfig(BaseModel):
     use_polling: bool = False
     """轮询观察器代替原生 OS 事件. NAS/NFS、Docker Desktop (macOS)、WSL2 等 inotify 不可靠时启用."""
@@ -822,6 +834,7 @@ class HotSettings(BaseModel):
     watermark: WatermarkConfig = WatermarkConfig()
     llm: LLMConfig = LLMConfig()
     r18: R18Config = R18Config()
+    organize: OrganizeConfig = OrganizeConfig()
     watcher: WatcherConfig = WatcherConfig()
     worker: WorkerConfig = WorkerConfig()
     logging: LoggingConfig = LoggingConfig()

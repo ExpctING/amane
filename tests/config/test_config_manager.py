@@ -16,6 +16,7 @@ from amane.config import (
     ConfigManager,
     DownloadableResource,
     HotSettings,
+    OrganizeConfig,
     ScrapingConfig,
     SiteConfig,
     WatermarkConfig,
@@ -32,6 +33,7 @@ from amane.enums import (
     WatermarkCorner,
     WatermarkKind,
 )
+from amane.organize.template import PATH_FIELD_MAX_BYTES
 from amane.parsing import ContentType
 
 # ---------------------------------------------------------------------------
@@ -154,6 +156,30 @@ class TestHotSettings:
         """worker.poll_interval > 10.0 被拒绝"""
         with pytest.raises(ValidationError, match=r"less than or equal to 10"):
             HotSettings(worker=WorkerConfig(poll_interval=11.0))
+
+
+class TestOrganizeConfig:
+    """organize.field_max_bytes: 路径字段的截断上限, 越界在配置校验阶段拒绝."""
+
+    def test_default_is_template_constant(self) -> None:
+        assert HotSettings().organize.field_max_bytes == PATH_FIELD_MAX_BYTES
+
+    @pytest.mark.parametrize("value", [16, 190, 255])
+    def test_accepted_range(self, value: int) -> None:
+        assert OrganizeConfig(field_max_bytes=value).field_max_bytes == value
+
+    @pytest.mark.parametrize(
+        ("value", "bound"), [(15, "greater than or equal to 16"), (256, "less than or equal to 255")]
+    )
+    def test_rejected_out_of_range(self, value: int, bound: str) -> None:
+        with pytest.raises(ValidationError, match=bound):
+            OrganizeConfig(field_max_bytes=value)
+
+    def test_hot_settings_round_trip(self) -> None:
+        """TOML 里写 [organize] field_max_bytes = 190 后, 反序列化与落盘都是该值."""
+        loaded = HotSettings.model_validate({"organize": {"field_max_bytes": 190}})
+        assert loaded.organize.field_max_bytes == 190
+        assert loaded.model_dump()["organize"] == {"field_max_bytes": 190}
 
 
 class TestScrapingDownloadResources:

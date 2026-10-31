@@ -23,7 +23,7 @@ from ...library import (
     inventory_tree,
     scan_trash,
 )
-from ..deps import RepoDep, RuntimeDep
+from ..deps import ConfigDep, RepoDep, RuntimeDep
 from ..models.cleanup import (
     InventoryNodePage,
     InventoryNodeResponse,
@@ -228,6 +228,7 @@ async def expand_cleanup_selection(
     req: SelectionRequest,
     repo: RepoDep,
     runtime: RuntimeDep,
+    config: ConfigDep,
 ) -> SelectionSummaryResponse:
     """由选中项展开显式来源清单: 文件表与详情页的删除入口据此预览. 只读, 不改磁盘与索引."""
     library = await repo.get_library(library_id)
@@ -251,6 +252,7 @@ async def expand_cleanup_selection(
         indexed=await repo.list_media_files(library_id=library_id, limit=None),
         metas=metas,
         include_work_dir=req.include_work_dir,
+        field_max_bytes=config.hot.organize.field_max_bytes,
     )
     if not outcome.inventory.entries:
         return SelectionSummaryResponse(exists=False, notices=_notices(outcome.inventory, outcome.notices))

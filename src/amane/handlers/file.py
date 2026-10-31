@@ -32,6 +32,7 @@ from ..organize import (
     video_dest,
 )
 from ..organize.link import create_video_link
+from ..organize.template import PATH_FIELD_MAX_BYTES
 from ..parsing import ContentType, FileInfo, parse_file_info
 from ..utils.path import existing_disk_path as existing_disk_path_sync
 from ..utils.path import is_descendant, nfc_path, path_is_under
@@ -88,6 +89,7 @@ async def execute_file_operations(
 
     未带库列时函数不报错, 直接少打中字角标 — 调用方负责构造.
     """
+    field_max_bytes = config.organize.field_max_bytes if config is not None else PATH_FIELD_MAX_BYTES
     source_path = await existing_disk_path(Path(media_file.path))
     if source_path is None:
         logger.warning("source file missing", path=media_file.path)
@@ -177,6 +179,7 @@ async def execute_file_operations(
             link_dir=paths.link.parent if paths.link is not None else None,
             link_name=paths.link.stem if paths.link is not None else None,
             actor_genders=actor_genders,
+            field_max_bytes=field_max_bytes,
         )
 
     if org_result.outcome is PlaceOutcome.PLACED:
@@ -225,6 +228,7 @@ async def apply_file_operations(
         source_path=Path(media_file.path),
         safe_dirs=safe_dirs,
         actor_genders=actor_genders,
+        field_max_bytes=config.organize.field_max_bytes,
     )
     return await execute_file_operations(
         media_file,

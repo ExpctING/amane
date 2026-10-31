@@ -6,6 +6,7 @@
     "agent": "Agent",
     "network": "Network",
     "worker": "Task Engine",
+    "organize": "Organizing",
     "watcher": "File Monitoring",
     "logging": "Logging",
     "sr": "Super Resolution",
@@ -537,6 +538,12 @@
       "shutdown_timeout": {
         "label": "Shutdown Timeout",
         "description": "Maximum time to wait for active tasks on shutdown (seconds)"
+      }
+    },
+    "organize": {
+      "field_max_bytes": {
+        "label": "Field Truncation Limit",
+        "description": "Max bytes for title/actor fields in path templates, truncated with an ellipsis; template brackets and the number do not use this budget, lower it to leave headroom when the share caps name length"
       }
     },
     "watcher": {

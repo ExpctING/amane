@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 import structlog
 
 from ...organize.path_templates import resolve_paths
+from ...organize.template import PATH_FIELD_MAX_BYTES
 from ...parsing import parse_file_info
 from ...utils.path import existing_disk_path, is_name_surrogate_dir, path_is_under, path_key
 from ...utils.threads import in_thread
@@ -77,6 +78,7 @@ def build_footprint(
     metas: Mapping[int, Metadata],
     include_work_dir: bool,
     limit: int = MAX_INVENTORY_ENTRIES,
+    field_max_bytes: int = PATH_FIELD_MAX_BYTES,
 ) -> FootprintOutcome:
     """由选中的媒体文件展开显式来源清单; 只读磁盘, 不访问数据库.
 
@@ -124,7 +126,7 @@ def build_footprint(
 
     for item in items:
         add(Path(item.path), indexed_file=True)
-        _add_products(library, item, metas, add=add, notices=notices)
+        _add_products(library, item, metas, add=add, notices=notices, field_max_bytes=field_max_bytes)
         if not include_work_dir:
             _add_subtitles(library, Path(item.path), add=add)
             continue
@@ -186,6 +188,7 @@ def _add_products(
     *,
     add: _Add,
     notices: list[FootprintNotice],
+    field_max_bytes: int,
 ) -> None:
     """按路径模板反解刮削产物: 产物位置由模板决定, 与视频文件名没有对应关系."""
     metadata = metas.get(item.metadata_id) if item.metadata_id is not None else None
@@ -200,6 +203,7 @@ def _add_products(
             source_path=source,
             file_info=parse_file_info(item.path),
             safe_dirs=None,
+            field_max_bytes=field_max_bytes,
         )
     except ValueError as exc:
         notices.append(FootprintNotice(FootprintNoticeKind.TEMPLATE_ERROR, path=source, detail=str(exc)))

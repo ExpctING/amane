@@ -6,6 +6,7 @@
     "agent": "智能体",
     "network": "网络",
     "worker": "任务引擎",
+    "organize": "文件整理",
     "watcher": "文件监控",
     "logging": "日志",
     "sr": "图像超分",
@@ -537,6 +538,12 @@
       "shutdown_timeout": {
         "label": "关闭超时",
         "description": "关闭时等待活跃任务完成的最长时间 (秒)"
+      }
+    },
+    "organize": {
+      "field_max_bytes": {
+        "label": "字段截断上限",
+        "description": "路径模板里标题/演员等字段的最大字节数, 超出补省略号; 模板里的括号与番号不占这份预算, 共享对名字有字节上限时调小留余量"
       }
     },
     "watcher": {

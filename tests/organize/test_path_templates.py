@@ -1059,6 +1059,51 @@ def test_resolve_paths_clips_long_title(media: Path) -> None:
     assert len(result.video.name.encode("utf-8")) <= 255
 
 
+class _FieldBudgetCase(NamedTuple):
+    id: str
+    budget: int
+    expected_bytes: int
+
+
+# あ = 3 字节. 预算 190 → 187 字节正文放得下 62 字 (186) + 省略号 = 189.
+FIELD_BUDGET_CASES: tuple[_FieldBudgetCase, ...] = (
+    _FieldBudgetCase("default-200", PATH_FIELD_MAX_BYTES, 198),
+    _FieldBudgetCase("tightened-190", 190, 189),
+    _FieldBudgetCase("min-16", 16, 15),
+)
+
+
+@pytest.mark.parametrize("case", FIELD_BUDGET_CASES, ids=lambda c: c.id)
+def test_path_engine_honours_field_budget(case: _FieldBudgetCase) -> None:
+    """预算取自配置, 引擎按它截断; 结果不超过预算且保留省略号."""
+    rendered = PathEngine("{title}", case.budget).render(TemplateContext.from_mapping({"title": _JP_90}))
+    assert rendered.endswith(PATH_FIELD_ELLIPSIS)
+    assert len(rendered.encode("utf-8")) == case.expected_bytes
+    assert len(rendered.encode("utf-8")) <= case.budget
+
+
+def test_resolve_paths_field_budget_leaves_room_for_literals(media: Path) -> None:
+    """段内字面量 (年份与番号) 不占字段预算: 调小预算后整段才能落进共享的字节上限.
+
+    复刻 300MAAN-496 那次失败: 预算 200 时整段超出共享的 214 字节, 创建以 WinError 123 报出.
+    """
+    library = Library(
+        name="t",
+        path=str(media),
+        video_template="#{actress}/[[{year}]]{title}[[{number}]]/{number}.{ext}",
+    )
+    meta = _meta(number="300MAAN-496", title=_JP_90, actors=["鷹宮ゆい"], release="2019-11-24")
+
+    default_segment = resolve_paths(library, meta, ext="mp4").video.parent.name
+    assert default_segment == f"[2019]{_CLIPPED_JP}[300MAAN-496]"
+    assert len(default_segment.encode("utf-8")) == 217
+
+    tightened = resolve_paths(library, meta, ext="mp4", field_max_bytes=190).video.parent.name
+    assert len(tightened.encode("utf-8")) == 208
+    assert tightened.startswith("[2019]")
+    assert tightened.endswith("[300MAAN-496]")
+
+
 class _AnchorCase(NamedTuple):
     id: str
     template: str

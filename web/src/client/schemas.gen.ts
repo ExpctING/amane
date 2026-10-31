@@ -3532,6 +3532,12 @@ export const HotSettingsSchema = {
                 psql_path: 'psql'
             }
         },
+        organize: {
+            $ref: '#/components/schemas/OrganizeConfig',
+            default: {
+                field_max_bytes: 200
+            }
+        },
         watcher: {
             $ref: '#/components/schemas/WatcherConfig',
             default: {
@@ -6146,6 +6152,20 @@ export const OptionalPathTemplateDefaultsSchema = {
     ],
     title: 'OptionalPathTemplateDefaults',
     description: '附属模板缺省 (Library 对应列为 None 时 ORGANIZE 使用).'
+} as const;
+
+export const OrganizeConfigSchema = {
+    properties: {
+        field_max_bytes: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 16,
+            title: 'Field Max Bytes',
+            default: 200
+        }
+    },
+    type: 'object',
+    title: 'OrganizeConfig'
 } as const;
 
 export const OrganizeConflictSchema = {

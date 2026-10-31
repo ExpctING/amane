@@ -233,12 +233,12 @@ def _nodes_use_placeholder(nodes: Sequence[_Node], name: str) -> bool:
     return False
 
 
-def _clip_field(value: str) -> str:
+def _clip_field(value: str, max_bytes: int) -> str:
     """按 UTF-8 字节截断并追加省略号, 不得切开多字节字符. 省略号计入上限."""
     data = value.encode("utf-8")
-    if len(data) <= PATH_FIELD_MAX_BYTES:
+    if len(data) <= max_bytes:
         return value
-    budget = PATH_FIELD_MAX_BYTES - _ELLIPSIS_BYTES
+    budget = max_bytes - _ELLIPSIS_BYTES
     if budget <= 0:
         return PATH_FIELD_ELLIPSIS
     clipped = data[:budget]
@@ -474,10 +474,21 @@ class TemplateEngine:
 
 
 class PathEngine(TemplateEngine):
-    """路径输出: 填值时截断 title / actor / actors / actress / actresses, 按 Windows 创建结果规范化每个路径段, 再按库根目录 / safe_dirs 写成字面绝对路径."""
+    """路径输出: 填值时截断 title / actor / actors / actress / actresses, 按 Windows 创建结果规范化每个路径段, 再按库根目录 / safe_dirs 写成字面绝对路径.
+
+    ``field_max_bytes`` 是单个字段的 UTF-8 字节上限, 取自配置 ``[organize] field_max_bytes``:
+    模板字面量 (如 ``[[{number}]]``) 另算, 名字总长超共享上限时调小给字面量留余量.
+    """
+
+    def __init__(self, source: str, field_max_bytes: int = PATH_FIELD_MAX_BYTES) -> None:
+        super().__init__(source)
+        self.field_max_bytes = field_max_bytes
 
     def fill(self, ctx: TemplateContext) -> str:
-        variables = {name: _clip_field(value) if name in _CLIP_KEYS else value for name, value in ctx.variables.items()}
+        variables = {
+            name: _clip_field(value, self.field_max_bytes) if name in _CLIP_KEYS else value
+            for name, value in ctx.variables.items()
+        }
         return _render_nodes(self.tree, variables)
 
     def clean(self, filled: str, ctx: TemplateContext) -> str:

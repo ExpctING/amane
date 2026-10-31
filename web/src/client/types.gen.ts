@@ -1769,6 +1769,7 @@ export type HotSettings = {
     watermark?: WatermarkConfig;
     llm?: LlmConfig;
     r18?: R18Config;
+    organize?: OrganizeConfig;
     watcher?: WatcherConfig;
     worker?: WorkerConfig;
     logging?: LoggingConfig;
@@ -3050,6 +3051,16 @@ export type OptionalPathTemplateDefaults = {
      * Subtitle Template
      */
     subtitle_template: string;
+};
+
+/**
+ * OrganizeConfig
+ */
+export type OrganizeConfig = {
+    /**
+     * Field Max Bytes
+     */
+    field_max_bytes?: number;
 };
 
 /**
